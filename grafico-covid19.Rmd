@@ -1,7 +1,7 @@
 ---
 title: "COVID-19 en España"
-author: 'Gustavo A: Useche Bonilla'
-date: "26/3/2020"
+author: 'Gustavo Useche Bonilla'
+date: "`r format(Sys.Date(), '%d de %B, %Y')`"
 output: 
     flexdashboard::flex_dashboard:
     orientation: rows
@@ -13,78 +13,52 @@ output:
 ```{r setup, include=FALSE}
 #------------------ Packages ------------------
 library(flexdashboard)
-# install.packages("devtools")
-# devtools::install_github("RamiKrispin/coronavirus", force = TRUE)
-library(coronavirus)
-data(coronavirus)
-# update_datasets()
-# View(coronavirus)
-# max(coronavirus$date)
-
+covid_es <- data.table::fread("./data/covid_es.csv", 
+                              sep = ";", 
+                              dec = ",",
+                              colClasses = list(
+                                numeric = c("Lat", "Long", "confirmados", "fallecidos", "recuperados"),
+                                character = c("Provincia", "CCAA"),
+                                POSIXct = "date"))
 `%>%` <- magrittr::`%>%`
 #------------------ Parameters ------------------
 # Set colors
 # https://www.w3.org/TR/css-color-3/#svg-color
-confirmed_color <- "purple"
-active_color <- "#1f77b4"
+confirmed_color <- "#1f77b4"
+active_color <- "orchid"
 recovered_color <- "forestgreen"
 death_color <- "red"
 #------------------ Data ------------------
-df <- coronavirus %>%
-  # dplyr::filter(date == max(date)) %>%
-  dplyr::filter(Country.Region == "Belgium") %>%
-  dplyr::group_by(Country.Region, type) %>%
-  dplyr::summarise(total = sum(cases)) %>%
-  tidyr::pivot_wider(
-    names_from = type,
-    values_from = total
-  ) %>%
-  # dplyr::mutate(unrecovered = confirmed - ifelse(is.na(recovered), 0, recovered) - ifelse(is.na(death), 0, death)) %>%
-  dplyr::mutate(unrecovered = confirmed - ifelse(is.na(death), 0, death)) %>%
-  dplyr::arrange(-confirmed) %>%
+df <- covid_es  %>%
+  dplyr::filter(date == max(date)) %>%
+  dplyr::filter(CCAA == "España") %>% 
+  dplyr::select(CCAA, date:recuperados) %>% 
+  dplyr::mutate(activos = confirmados - ifelse(is.na(recuperados), 0, recuperados) - ifelse(is.na(fallecidos), 0, fallecidos)) %>%
+  dplyr::arrange(-confirmados) %>%
   dplyr::ungroup() %>%
-  dplyr::mutate(country = dplyr::if_else(Country.Region == "United Arab Emirates", "UAE", Country.Region)) %>%
-  dplyr::mutate(country = dplyr::if_else(country == "Mainland China", "China", country)) %>%
-  dplyr::mutate(country = dplyr::if_else(country == "North Macedonia", "N.Macedonia", country)) %>%
-  dplyr::mutate(country = trimws(country)) %>%
-  dplyr::mutate(country = factor(country, levels = country))
+  dplyr::mutate(CCAA = factor(CCAA, levels = CCAA))
 
-df_daily <- coronavirus %>%
-  dplyr::filter(Country.Region == "Belgium") %>%
-  dplyr::group_by(date, type) %>%
-  dplyr::summarise(total = sum(cases, na.rm = TRUE)) %>%
-  tidyr::pivot_wider(
-    names_from = type,
-    values_from = total
-  ) %>%
-  dplyr::arrange(date) %>%
-  dplyr::ungroup() %>%
-  #dplyr::mutate(active = confirmed - death - recovered) %>%
-  dplyr::mutate(active = confirmed - death) %>%
-  dplyr::mutate(
-    confirmed_cum = cumsum(confirmed),
-    death_cum = cumsum(death),
-    # recovered_cum = cumsum(recovered),
-    active_cum = cumsum(active)
-  )
+df_daily <- covid_es %>%
+  dplyr::filter(CCAA == "España") %>% 
+  dplyr::arrange(date) %>% 
+  dplyr::mutate(activos = confirmados - fallecidos - recuperados)
 
-
-df1 <- coronavirus %>% dplyr::filter(date == max(date))
+df1 <- covid_es %>% dplyr::filter(date == max(date))
 ```
 
-Summary
+Resumen
 =======================================================================
 
 Row {data-width=400}
 -----------------------------------------------------------------------
 
-### confirmed {.value-box}
+### Confirmados {.value-box}
 
 ```{r}
 
 valueBox(
-  value = paste(format(sum(df$confirmed), big.mark = ","), "", sep = " "),
-  caption = "Total confirmed cases",
+  value = paste(format(df$confirmados, big.mark = ","), "", sep = " "),
+  caption = "Casos confirmados totales",
   icon = "fas fa-user-md",
   color = confirmed_color
 )
@@ -105,17 +79,17 @@ valueBox(
 
 
 
-### death {.value-box}
+### Fallecidos {.value-box}
 
 ```{r}
 
 valueBox(
-  value = paste(format(sum(df$death, na.rm = TRUE), big.mark = ","), " (",
-    round(100 * sum(df$death, na.rm = TRUE) / sum(df$confirmed), 1),
+  value = paste(format(df$fallecidos, big.mark = ","), " (",
+    round(100 * df$death / df$confirmados, 1),
     "%)",
     sep = ""
   ),
-  caption = "Death cases (death rate)",
+  caption = "Fallecidos totales (Mortalidad)",
   icon = "fas fa-heart-broken",
   color = death_color
 )
@@ -125,7 +99,7 @@ valueBox(
 Row
 -----------------------------------------------------------------------
 
-### **Daily cumulative cases by type** (Belgium only)
+### **Casos acumulados diarios, por tipo**
     
 ```{r}
 plotly::plot_ly(data = df_daily) %>%
@@ -201,7 +175,7 @@ plotly::plot_ly(data = df_daily) %>%
   )
 ```
 
-Comparison
+Comparación
 =======================================================================
 
 
@@ -209,7 +183,7 @@ Column {data-width=400}
 -------------------------------------
 
 
-### **Daily new cases**
+### **Casos nuevos diarios**
     
 ```{r}
 daily_confirmed <- coronavirus %>%
@@ -332,10 +306,10 @@ plotly::plot_ly(
 ```
 
 
-Map
+Mapa
 =======================================================================
 
-### **World map of cases** (*use + and - icons to zoom in/out*)
+### **Mapa mundial de casos** (*usa los iconos +  y - para acercarte o alejarte*)
 
 ```{r}
 # map tab added by Art Steinmetz
@@ -388,38 +362,31 @@ map_object %>%
 
 
 
-About
+Acerca de
 =======================================================================
 
-**The Coronavirus Dashboard: the case of Belgium**
+**COVID-19 en España**
 
-This Coronavirus dashboard: the case of Belgium provides an overview of the 2019 Novel Coronavirus COVID-19 (2019-nCoV) epidemic for Belgium. This dashboard is built with R using the R Makrdown framework and was adapted from this [dashboard](https://ramikrispin.github.io/coronavirus_dashboard/){target="_blank"} by Rami Krispin.
+COVID-19 en España, provee información a grandes rasgos de la epidemia por el Nuevo Coronavirus 2019 (2019-nCoV) en España, sus comunidades autonomas y relación con otros paises del mundo. Este gráfico es generado con R utilizando como base el paquete RMarkdown y sus derivados, y fue adapatados de los tableros de [Rami Krispin](https://ramikrispin.github.io/coronavirus_dashboard/){target="_blank"} y [Antoine Soetewey](https://www.antoinesoetewey.com/files/coronavirus-dashboard.html){target="_blank"}. <br>
+Este es mi primer proyecto publicado usando R.
 
-**Code**
+**Código**
 
-The code behind this dashboard is available on [GitHub](https://github.com/AntoineSoetewey/coronavirus_dashboard){target="_blank"}.
-
-**Data**
-
-The input data for this dashboard is the dataset available from the [`{coronavirus}`](https://github.com/RamiKrispin/coronavirus){target="_blank"} R package. Make sure to download the development version of the package to have the latest data:
-
-```
-install.packages("devtools")
-devtools::install_github("RamiKrispin/coronavirus")
-```
-
-The data and dashboard are refreshed on a daily basis.
-
-The raw data is pulled from the Johns Hopkins University Center for Systems Science and Engineering (JHU CCSE) Coronavirus [repository](https://github.com/RamiKrispin/coronavirus-csv){target="_blank"}.
-
-**Contact**
-
-For any question or feedback, you can [contact me](https://www.statsandr.com/contact/). More information about this dashboard can be found in this [article](https://www.statsandr.com/blog/how-to-create-a-simple-coronavirus-dashboard-specific-to-your-country-in-r/).
-
-**Update**
-
-The data is as of `r format(max(coronavirus$date), "%A %B %d, %Y")` and the dashboard has been updated on `r format(Sys.time(), "%A %B %d, %Y")`.
+El código usado para la creación de esta página puede encontrarse en  [GitHub](https://github.com/ubgus/covid19_es){target="_blank"}.
 
 
+**Fuentes**
 
-*Go back to [www.statsandr.com](https://www.statsandr.com/) (blog) or [www.antoinesoetewey.com](https://www.antoinesoetewey.com/) (personal website)*.
+Los datos son obtenidos del repositorio sobre Coronavirus del Johns Hopkins University Center for Systems Science and Engineering ([JHU CCSE](https://github.com/CSSEGISandData/COVID-19)), y recogidos de las actualizaciones diarias del [Centro de Coordinación de Alertas y Emergencias Sanitarias](https://www.mscbs.gob.es/profesionales/saludPublica/ccayes/alertasActual/nCov-China/situacionActual.htm). <br>
+Los datos y el tablero son actualizados diariamente.
+
+
+**Contacto**
+
+Para cualquier pregunta puedes contactarme en [Twitter](). <br>
+Más información sobre este tablero en el [artículo](https://www.statsandr.com/blog/how-to-create-a-simple-coronavirus-dashboard-specific-to-your-country-in-r/) que me sirvió de inspiración.
+
+
+**Actualización**
+
+Últimos datos del JHU CCSE adquiridos el `r format(max(coronavirus$date), "%A, %d de %B, %Y")` y el tablero ha sido actualizado el `r format(Sys.Date(), "%A, %d de %B, %Y")`.
