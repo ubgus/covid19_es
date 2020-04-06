@@ -484,7 +484,11 @@ cv_data_for_plot_spain <- covid_es %>%
     names_to = "tipo",
     values_to = "casos"
   ) %>% 
+<<<<<<< HEAD
   dplyr::mutate(log_cases = 2 * log(casos)) %>% 
+=======
+  dplyr::mutate(log_cases = log(casos)) %>% 
+>>>>>>> b6ff326cb5280919cd85ad146be8f38009dce44d
   dplyr::ungroup()
 
 cv_data_for_plot_spain.split <- cv_data_for_plot_spain %>% split(cv_data_for_plot_spain$tipo)
