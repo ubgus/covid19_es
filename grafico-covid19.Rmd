@@ -12,7 +12,11 @@ output:
 
 ```{r setup, include=FALSE}
 #------------------ Packages ------------------
+remotes::install_github("RamiKrispin/coronavirus")
 library(flexdashboard)
+library(coronavirus)
+data(coronavirus)
+update_datasets()
 covid_es <- data.table::fread("./data/covid_es.csv", 
                               sep = ";", 
                               dec = ",",
@@ -60,7 +64,7 @@ Row {data-width=400}
 valueBox(
   value = paste(format(df$confirmados, big.mark = ".", decimal.mark = ","), "", sep = " "),
   caption = "Casos confirmados totales",
-  icon = "fas fa-virus",
+  icon = "fa-virus",
   color = confirmed_color
 )
 ```
@@ -78,14 +82,29 @@ valueBox(
 ```{r}
 
 valueBox(
-  value = paste(format(df$fallecidos, big.mark = ",", decimal.mark = ","), " (",
-    round(100 * df$death / df$confirmados, 1),
+  value = paste(format(df$fallecidos, big.mark = ".", decimal.mark = ","), " (",
+    round(100 * df$fallecidos / df$confirmados, 1),
     "%)",
     sep = ""
   ),
   caption = "Fallecidos totales (Mortalidad)",
-  icon = "fas fa-heart-broken",
+  icon = "fa-heart-broken",
   color = death_color
+)
+```
+
+
+
+
+### Recuperados {.value-box}
+
+```{r}
+
+valueBox(
+  value = paste(format(df$recuperados, big.mark = ".", decimal.mark = ","), "", sep = " "),
+  caption = "Casos Activos totales",
+  icon = "fa-lung-virus",
+  color = recovered_color
 )
 ```
 
@@ -102,7 +121,7 @@ valueBox(
 valueBox(
   value = paste(format(df$activos, big.mark = ".", decimal.mark = ","), "", sep = " "),
   caption = "Casos Activos totales",
-  icon = "fas fa-lung-virus",
+  icon = "fa-lung-virus",
   color = active_color
 )
 ```
@@ -199,7 +218,7 @@ plotly::plot_ly(data = df_daily) %>%
   )
 ```
 
-Comunidades Autonomas
+Comunidades Autonomas y Europa
 =======================================================================
 
 
@@ -207,9 +226,9 @@ Column
 -------------------------------------
 
 
-### **Casos totales diarios**
+### **Casos totales en las distintas CCAA**
     
-```{r}
+```{r ccaa_totales}
 daily_confirmed <- covid_es %>%
 #  dplyr::filter(type == "confirmed") %>%
 #  dplyr::filter(date >= "2020-02-29") %>%
@@ -380,15 +399,16 @@ plotly::plot_ly(daily_confirmed) %>%
   )
 ```
  
-### **Cases distribution by type**
+### **Distribución de los casos por tipos**
 
-```{r daily_summary}
+```{r cases_by_type}
 df_EU <- coronavirus %>%
   # dplyr::filter(date == max(date)) %>%
-  dplyr::filter(Country.Region == "Belgium" |
+  dplyr::filter(Country.Region == "Spain" |
     Country.Region == "France" |
     Country.Region == "Italy" |
-    Country.Region == "Spain") %>%
+    Country.Region == "Portugal" | 
+    Country.Region == "Germany" ) %>%
   dplyr::group_by(Country.Region, type) %>%
   dplyr::summarise(total = sum(cases)) %>%
   tidyr::pivot_wider(
@@ -398,10 +418,12 @@ df_EU <- coronavirus %>%
   # dplyr::mutate(unrecovered = confirmed - ifelse(is.na(recovered), 0, recovered) - ifelse(is.na(death), 0, death)) %>%
   dplyr::mutate(unrecovered = confirmed - ifelse(is.na(death), 0, death)) %>%
   dplyr::arrange(confirmed) %>%
-  dplyr::ungroup() %>%
+  dplyr::ungroup() %>% 
   dplyr::mutate(country = dplyr::if_else(Country.Region == "United Arab Emirates", "UAE", Country.Region)) %>%
-  dplyr::mutate(country = dplyr::if_else(country == "Mainland China", "China", country)) %>%
-  dplyr::mutate(country = dplyr::if_else(country == "North Macedonia", "N.Macedonia", country)) %>%
+  dplyr::mutate(country = dplyr::if_else(country == "Spain", "España", country)) %>%
+  dplyr::mutate(country = dplyr::if_else(country == "France", "Francia", country)) %>%
+  dplyr::mutate(country = dplyr::if_else(country == "Italy", "Italia", country)) %>%
+  dplyr::mutate(country = dplyr::if_else(country == "Germany", "Alemania", country)) %>%
   dplyr::mutate(country = trimws(country)) %>%
   dplyr::mutate(country = factor(country, levels = country))
 
@@ -413,19 +435,19 @@ plotly::plot_ly(
   # text =  ~ confirmed,
   # textposition = 'auto',
   type = "bar",
-  name = "Confirmed",
-  marker = list(color = active_color)
+  name = "Confirmados",
+  marker = list(color = confirmed_color)
 ) %>%
   plotly::add_trace(
     y = ~death,
     # text =  ~ death,
     # textposition = 'auto',
-    name = "Death",
+    name = "Fallecidos",
     marker = list(color = death_color)
   ) %>%
   plotly::layout(
     barmode = "stack",
-    yaxis = list(title = "Total cases"),
+    yaxis = list(title = "Casos totales"),
     xaxis = list(title = ""),
     hovermode = "compare",
     margin = list(
@@ -439,16 +461,79 @@ plotly::plot_ly(
 ```
 
 
-Mapa
+España
+=======================================================================
+
+### **Mapa de España**
+
+```{r}
+library(leaflet)
+library(leafpop)
+library(purrr)
+cv_data_for_plot_spain <- covid_es %>%
+  # dplyr::filter(Country.Region == "Belgium") %>%
+  # dplyr::filter(cases > 0) %>%
+  # dplyr::group_by(Country.Region, Province.State, Lat, Long, type) %>%
+  # dplyr::summarise(cases = sum(cases)) %>%
+  # dplyr::mutate(log_cases = 2 * log(cases)) %>%
+  dplyr::filter(date == max(date)) %>%
+  dplyr::filter(CCAA != "España") %>% 
+  dplyr::group_by(CCAA, Lat, Long) %>% 
+  tidyr::pivot_longer(
+    cols = confirmados:recuperados,
+    names_to = "tipo",
+    values_to = "casos"
+  ) %>% 
+  dplyr::mutate(log_cases = 2 * log(casos)) %>% 
+  dplyr::ungroup()
+
+cv_data_for_plot_spain.split <- cv_data_for_plot_spain %>% split(cv_data_for_plot_spain$tipo)
+pal <- colorFactor(c("orange", "red", "green"), domain = c("confirmados", "fallecidos", "recuperados"))
+map_object <- leaflet() %>% addProviderTiles(providers$Esri.WorldStreetMap)
+names(cv_data_for_plot_spain.split) %>%
+  purrr::walk(function(df) {
+    map_object <<- map_object %>%
+      addCircleMarkers(
+        data = cv_data_for_plot_spain.split[[df]],
+        lng = ~Long, lat = ~Lat,
+        #                 label=~as.character(cases),
+        color = ~ pal(tipo),
+        stroke = FALSE,
+        fillOpacity = 0.8,
+        radius = ~log_cases,
+        popup = leafpop::popupTable(cv_data_for_plot_spain.split[[df]],
+          feature.id = FALSE,
+          row.numbers = FALSE,
+          zcol = c("tipo", "casos", "Provincia", "CCAA")
+        ),
+        group = df,
+        #                 clusterOptions = markerClusterOptions(removeOutsideVisibleBounds = F),
+        labelOptions = labelOptions(
+          noHide = F,
+          direction = "auto"
+        )
+      )
+  })
+
+map_object %>%
+  addLayersControl(
+    overlayGroups = names(cv_data_for_plot_spain.split),
+    options = layersControlOptions(collapsed = FALSE)
+  )
+```
+
+
+
+
+
+
+El Mundo
 =======================================================================
 
 ### **Mapa mundial de casos** (*usa los iconos +  y - para acercarte o alejarte*)
 
 ```{r}
 # map tab added by Art Steinmetz
-library(leaflet)
-library(leafpop)
-library(purrr)
 cv_data_for_plot <- coronavirus %>%
   # dplyr::filter(Country.Region == "Belgium") %>%
   dplyr::filter(cases > 0) %>%
