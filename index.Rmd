@@ -62,49 +62,10 @@ Row {data-width=400}
 ```{r}
 
 valueBox(
-  value = paste(format(df$confirmados, decimal.mark = ","), "", sep = " "),
+  value = paste(format(df$confirmados, big.mark = ".", decimal.mark = ","), "", sep = " "),
   caption = "Casos confirmados totales",
-  icon = "fa-virus",
+  icon = "fas fa-virus",
   color = confirmed_color
-)
-```
-
-
-
-
-
-
-
-
-
-### Fallecidos {.value-box}
-
-```{r}
-
-valueBox(
-  value = paste(format(df$fallecidos, decimal.mark = ","), " (",
-    round(100 * df$fallecidos / df$confirmados, 1),
-    "%)",
-    sep = ""
-  ),
-  caption = "Fallecidos totales (Mortalidad)",
-  icon = "fa-heart-broken",
-  color = death_color
-)
-```
-
-
-
-
-### Recuperados {.value-box}
-
-```{r}
-
-valueBox(
-  value = paste(format(df$recuperados, decimal.mark = ","), "", sep = " "),
-  caption = "Casos Activos totales",
-  icon = "fa-lung-virus",
-  color = recovered_color
 )
 ```
 
@@ -119,12 +80,56 @@ valueBox(
 ```{r}
 
 valueBox(
-  value = paste(format(df$activos, decimal.mark = ","), "", sep = " "),
-  caption = "Casos Activos totales",
-  icon = "fa-lung-virus",
+  value = paste(format(df$activos, big.mark = ".", decimal.mark = ","), "", sep = " "),
+  caption = "Casos Activos",
+  icon = "fas fa-ambulance",
   color = active_color
 )
 ```
+
+
+
+
+
+
+
+
+### Fallecidos {.value-box}
+
+```{r}
+
+valueBox(
+  value = paste(format(df$fallecidos, big.mark = ".", decimal.mark = ","), " (",
+    round(100 * df$fallecidos / df$confirmados, 1),
+    "%)",
+    sep = ""
+  ),
+  caption = "Fallecidos totales (Mortalidad)",
+  icon = "fas fa-heart-broken",
+  color = death_color
+)
+```
+
+
+
+
+### Recuperados {.value-box}
+
+```{r}
+
+valueBox(
+  value = paste(format(df$recuperados, big.mark = ".", decimal.mark = ","), "", sep = " "),
+  caption = "Casos Recuperados totales",
+  icon = "fas fa-heartbeat",
+  color = recovered_color
+)
+```
+
+
+
+
+
+
 
 
 
@@ -605,6 +610,6 @@ Más información sobre este tablero en el [artículo](https://www.statsandr.com
 
 **Actualización**
 
-Últimos datos adquiridos del CCAES el `r format(max(covid_es$date), "%A, %d de %B, %Y")`. 
-Últimos datos adquiridos del JHU CCSE el `r format(max(coronavirus$date), "%A, %d de %B, %Y")`
+Últimos datos adquiridos del CCAES el `r format(max(covid_es$date), "%A, %d de %B, %Y")`. <br>
+Últimos datos adquiridos del JHU CCSE el `r format(max(coronavirus$date), "%A, %d de %B, %Y")`. <br>
 Última actualización del tablero el `r format(Sys.Date(), "%A, %d de %B, %Y")`.
