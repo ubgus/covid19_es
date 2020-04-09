@@ -62,7 +62,7 @@ Row {data-width=400}
 ```{r}
 
 valueBox(
-  value = paste(format(df$confirmados, big.mark = ".", decimal.mark = ","), "", sep = " "),
+  value = paste(format(df$confirmados, decimal.mark = ","), "", sep = " "),
   caption = "Casos confirmados totales",
   icon = "fa-virus",
   color = confirmed_color
@@ -82,7 +82,7 @@ valueBox(
 ```{r}
 
 valueBox(
-  value = paste(format(df$fallecidos, big.mark = ".", decimal.mark = ","), " (",
+  value = paste(format(df$fallecidos, decimal.mark = ","), " (",
     round(100 * df$fallecidos / df$confirmados, 1),
     "%)",
     sep = ""
@@ -101,7 +101,7 @@ valueBox(
 ```{r}
 
 valueBox(
-  value = paste(format(df$recuperados, big.mark = ".", decimal.mark = ","), "", sep = " "),
+  value = paste(format(df$recuperados, decimal.mark = ","), "", sep = " "),
   caption = "Casos Activos totales",
   icon = "fa-lung-virus",
   color = recovered_color
@@ -119,7 +119,7 @@ valueBox(
 ```{r}
 
 valueBox(
-  value = paste(format(df$activos, big.mark = ".", decimal.mark = ","), "", sep = " "),
+  value = paste(format(df$activos, decimal.mark = ","), "", sep = " "),
   caption = "Casos Activos totales",
   icon = "fa-lung-virus",
   color = active_color
@@ -461,10 +461,12 @@ plotly::plot_ly(
 ```
 
 
-España
+Mapas
 =======================================================================
 
-### **Mapa de España**
+Column {.tabset .tabset-fade}
+-------------------------------------
+### **España**
 
 ```{r}
 library(leaflet)
@@ -525,10 +527,6 @@ map_object %>%
 
 
 
-
-
-El Mundo
-=======================================================================
 
 ### **Mapa mundial de casos** (*usa los iconos +  y - para acercarte o alejarte*)
 
@@ -607,4 +605,6 @@ Más información sobre este tablero en el [artículo](https://www.statsandr.com
 
 **Actualización**
 
-Últimos datos del CCAES adquiridos el `r format(max(covid_es$date), "%A, %d de %B, %Y")`, del JHU CCSE el `r format(max(coronavirus$date), "%A, %d de %B, %Y")`, y el tablero ha sido actualizado el `r format(Sys.Date(), "%A, %d de %B, %Y")`.
+Últimos datos adquiridos del CCAES el `r format(max(covid_es$date), "%A, %d de %B, %Y")`. 
+Últimos datos adquiridos del JHU CCSE el `r format(max(coronavirus$date), "%A, %d de %B, %Y")`
+Última actualización del tablero el `r format(Sys.Date(), "%A, %d de %B, %Y")`.
