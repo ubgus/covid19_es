@@ -601,10 +601,10 @@ Los datos y el tablero son actualizados diariamente.
 
 **Contacto**
 
-Para cualquier pregunta puedes contactarme en [Twitter](). <br>
+Para cualquier pregunta puedes contactarme en [Twitter](https://twitter.com/nefro_analista). <br>
 Más información sobre este tablero en el [artículo](https://www.statsandr.com/blog/how-to-create-a-simple-coronavirus-dashboard-specific-to-your-country-in-r/) que me sirvió de inspiración.
 
 
 **Actualización**
 
-Últimos datos del JHU CCSE adquiridos el `r format(max(coronavirus$date), "%A, %d de %B, %Y")` y el tablero ha sido actualizado el `r format(Sys.Date(), "%A, %d de %B, %Y")`.
+Últimos datos del CCAES adquiridos el `r format(max(covid_es$date), "%A, %d de %B, %Y")`, del JHU CCSE el `r format(max(coronavirus$date), "%A, %d de %B, %Y")`, y el tablero ha sido actualizado el `r format(Sys.Date(), "%A, %d de %B, %Y")`.
