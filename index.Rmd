@@ -4,15 +4,15 @@ author: 'Gustavo Useche Bonilla'
 date: "`r format(Sys.Date(), '%d de %B, %Y')`"
 output: 
     flexdashboard::flex_dashboard:
-    orientation: rows
-    # social: ["facebook", "twitter", "linkedin"]
-    source_code: embed
-    vertical_layout: fill
+      orientation: rows
+      # social: ["facebook", "twitter", "linkedin"]
+      source_code: embed
+      vertical_layout: fill
 ---
 
 ```{r setup, include=FALSE}
 #------------------ Packages ------------------
-remotes::install_github("RamiKrispin/coronavirus")
+# remotes::install_github("RamiKrispin/coronavirus")
 library(flexdashboard)
 library(coronavirus)
 data(coronavirus)
@@ -484,11 +484,7 @@ cv_data_for_plot_spain <- covid_es %>%
     names_to = "tipo",
     values_to = "casos"
   ) %>% 
-<<<<<<< HEAD
   dplyr::mutate(log_cases = 2 * log(casos)) %>% 
-=======
-  dplyr::mutate(log_cases = log(casos)) %>% 
->>>>>>> b6ff326cb5280919cd85ad146be8f38009dce44d
   dplyr::ungroup()
 
 cv_data_for_plot_spain.split <- cv_data_for_plot_spain %>% split(cv_data_for_plot_spain$tipo)

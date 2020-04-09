@@ -1,3 +1,5 @@
-name: "my-website"
+name: "covid19_es"
 output_dir: docs
+include: ["index.Rmd"]
+exclude: ["actualizaciones_ccaes/", "informes_isciii/", "code/", "data/"]
 
