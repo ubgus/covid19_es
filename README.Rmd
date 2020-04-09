@@ -18,7 +18,7 @@ Gráfico no interactivo que muestra la evolución de los casos de COVID-19 en Es
 
 Datos obtenidos de las publicaciones oficiales de:
 
-* Centro de Coordinación de Alertas y Emergencias Sanitarias (CCAES) <br>
-* Instituto de Salud Carlos III (ISCIII) <br>
-* Red Nacional de Vigilancia Epidemiológica (RENAVE) <br>
-* Conselleria de Sanitat Universal i Salut Pública de la Generalitat Valenciana (GVA Sanitat) www.san.gva.es <br>
+* Centro de Coordinación de Alertas y Emergencias Sanitarias ([CCAES](https://www.mscbs.gob.es/profesionales/saludPublica/ccayes/alertasActual/nCov-China/situacionActual.htm)). <br>
+* Instituto de Salud Carlos III ([ISCIII](https://www.isciii.es)). <br>
+* Conselleria de Sanitat Universal i Salut Pública de la Generalitat Valenciana ([GVA Sanitat](www.san.gva.es)).  <br>
+* Johns Hopkins University Center for Systems Science and Engineering ([JHU CCSE](https://github.com/CSSEGISandData/COVID-19)).
