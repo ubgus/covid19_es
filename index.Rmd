@@ -13,17 +13,12 @@ output:
 ```{r setup, include=FALSE}
 #------------------ Packages ------------------
 # remotes::install_github("RamiKrispin/coronavirus")
-library(flexdashboard)
-library(coronavirus)
+require(flexdashboard)
+require(coronavirus)
 data(coronavirus)
 update_datasets()
-covid_es <- data.table::fread("./data/covid_es.csv", 
-                              sep = ";", 
-                              dec = ",",
-                              colClasses = list(
-                                numeric = c("Lat", "Long", "confirmados", "fallecidos", "recuperados"),
-                                character = c("Provincia", "CCAA"),
-                                POSIXct = "date"))
+covid_es <- readr::read_csv2("./data/covid_es.csv")
+
 `%>%` <- magrittr::`%>%`
 #------------------ Parameters ------------------
 # Set colors
