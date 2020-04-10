@@ -12,6 +12,13 @@ knitr::opts_chunk$set(echo = TRUE)
 Gráfico no interactivo que muestra la evolución de los casos de COVID-19 en España y sus provincias, basado en el trabajo realizado
  por [Rami Krispin](https://ramikrispin.github.io/coronavirus/) 
  y [Antoine Soetewey](https://www.statsandr.com/blog/how-to-create-a-simple-coronavirus-dashboard-specific-to-your-country-in-r/).
+ 
+Puedes ver el resultado en: https://ubgus.github.io/covid19_es/
+
+
+## Github Pages
+
+Para generar el archivo html a utilizar en Github Pages, puedes usar la función `rmarkdown::render_site()`.
 
 
 ## Fuentes
