@@ -17,7 +17,9 @@ require(flexdashboard)
 require(coronavirus)
 data(coronavirus)
 update_datasets()
-covid_es <- readr::read_csv2("./data/covid_es.csv")
+covid_es <- readr::read_csv2("./data/covid_es.csv", 
+                             locale = readr::locale("es", decimal_mark = ",")
+                             )
 
 `%>%` <- magrittr::`%>%`
 #------------------ Parameters ------------------
