@@ -39,6 +39,5 @@ vignettes/*.pdf
 .Renviron
 
 # .pdf files from CCAES and ISCIII
-/actualizaciones_ccaes/
-/informes_isciii/
+/pdfs/
 
