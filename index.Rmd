@@ -26,6 +26,7 @@ confirmed_color <- "#1f77b4"
 active_color <- "orchid"
 recovered_color <- "forestgreen"
 death_color <- "red"
+new_cases_color <- "#66ffcc"
 
 # Set locale
 local_es <- readr::locale("es", decimal_mark = ",")
@@ -47,9 +48,9 @@ df <- covid_es  %>%
 df_daily <- covid_es %>%
   dplyr::filter(CCAA == "España") %>% 
   dplyr::arrange(date) %>% 
-  dplyr::mutate(activos = confirmados - fallecidos - recuperados)
+  dplyr::mutate(activos = confirmados - ifelse(is.na(recuperados), 0, recuperados) - ifelse(is.na(fallecidos), 0, fallecidos)) %>% 
+  dplyr::mutate(nuevos_conf = confirmados - dplyr::lag(confirmados))
 
-df1 <- covid_es %>% dplyr::filter(date == max(date))
 ```
 
 
@@ -174,17 +175,28 @@ plotly::plot_ly(data = df_daily) %>%
   plotly::add_annotations(
     x = as.Date("2020-03-15"),
     y = 7753,
-    text = paste("Inicia la",
-                 "",
-                 "cuarentena"),
+    text = "Inicia la<br>cuarentena",
     xref = "x",
     yref = "y",
     arrowhead = 5,
     arrowhead = 3,
     arrowsize = 1,
     showarrow = TRUE,
-    ax = -10,
-    ay = -90
+    ax = -20,
+    ay = -70
+  ) %>%
+  plotly::add_annotations(
+    x = as.Date("2020-04-17"),
+    y = 72963,
+    text = "Datos actualizados<br>de Cataluña",
+    xref = "x",
+    yref = "y",
+    arrowhead = 5,
+    arrowhead = 3,
+    arrowsize = 1,
+    showarrow = TRUE,
+    ax = 15,
+    ay = -50
   ) %>%
 #  plotly::add_annotations(
 #    x = as.Date("2020-03-11"),
@@ -224,6 +236,36 @@ plotly::plot_ly(data = df_daily) %>%
     hovermode = "compare"
   )
 ```
+
+
+Nuevos casos y activos
+=======================================================================
+
+Column
+-------------------------------------
+
+### **Nuevos casos frente al total de activos**
+
+```{r}
+
+plotly::plot_ly(data = df_daily) %>% 
+  plotly::add_trace(
+    x = ~date,
+    y = ~nuevos_conf,
+    name = "Nuevos casos confirmados",
+    type = "bar",
+    marker = list(color = new_cases_color)
+  ) %>% 
+  plotly::layout(
+    title = "",
+    yaxis = list(title = "Casos"),
+    xaxis = list(title = "Fecha"),
+    hovermode = "compare"
+  )
+```
+
+
+
 
 Comunidades Autonomas y Europa
 =======================================================================
