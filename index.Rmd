@@ -15,11 +15,8 @@ output:
 # remotes::install_github("RamiKrispin/coronavirus")
 require(flexdashboard)
 require(coronavirus)
-update_datasets()
 data(coronavirus)
-covid_es <- readr::read_csv2("./data/covid_es.csv", 
-                             locale = readr::locale("es", decimal_mark = ",")
-                             )
+update_datasets()
 
 `%>%` <- magrittr::`%>%`
 #------------------ Parameters ------------------
@@ -29,7 +26,15 @@ confirmed_color <- "#1f77b4"
 active_color <- "orchid"
 recovered_color <- "forestgreen"
 death_color <- "red"
+
+# Set locale
+local_es <- readr::locale("es", decimal_mark = ",")
+
 #------------------ Data ------------------
+
+covid_es <- readr::read_csv2("./data/covid_es.csv", 
+                             locale = local_es)
+
 df <- covid_es  %>%
   dplyr::filter(date == max(date)) %>%
   dplyr::filter(CCAA == "España") %>% 
@@ -97,7 +102,7 @@ valueBox(
 
 valueBox(
   value = paste(format(df$fallecidos, big.mark = ".", decimal.mark = ","), " (",
-    round(100 * df$fallecidos / df$confirmados, 1),
+    prettyNum(round(100 * df$fallecidos / df$confirmados, 1), decimal.mark = ","),
     "%)",
     sep = ""
   ),
@@ -116,7 +121,7 @@ valueBox(
 
 valueBox(
   value = paste(format(df$recuperados, big.mark = ".", decimal.mark = ","), "", sep = " "),
-  caption = "Casos Recuperados totales",
+  caption = "Casos Cuperados totales",
   icon = "fas fa-heartbeat",
   color = recovered_color
 )
@@ -418,7 +423,7 @@ df_EU <- coronavirus %>%
     values_from = total
   ) %>%
   # dplyr::mutate(unrecovered = confirmed - ifelse(is.na(recovered), 0, recovered) - ifelse(is.na(death), 0, death)) %>%
-  dplyr::mutate(unrecovered = confirmed - ifelse(is.na(death), 0, death)) %>%
+  dplyr::mutate(active = confirmed - ifelse(is.na(death), 0, death) - ifelse(is.na(recovered), 0, recovered)) %>%
   dplyr::arrange(confirmed) %>%
   dplyr::ungroup() %>% 
   dplyr::mutate(country = dplyr::if_else(Country.Region == "United Arab Emirates", "UAE", Country.Region)) %>%
@@ -433,12 +438,12 @@ plotly::plot_ly(
   data = df_EU,
   x = ~country,
   # y = ~unrecovered,
-  y = ~ confirmed,
+  y = ~active,
   # text =  ~ confirmed,
   # textposition = 'auto',
   type = "bar",
-  name = "Confirmados",
-  marker = list(color = confirmed_color)
+  name = "Activos",
+  marker = list(color = active_color)
 ) %>%
   plotly::add_trace(
     y = ~death,
@@ -447,6 +452,11 @@ plotly::plot_ly(
     name = "Fallecidos",
     marker = list(color = death_color)
   ) %>%
+  plotly::add_trace(
+    y = ~recovered, 
+    name = "Curados", 
+    marker = list(color = recovered_color)
+  ) %>% 
   plotly::layout(
     barmode = "stack",
     yaxis = list(title = "Casos totales"),
