@@ -15,8 +15,8 @@ output:
 # remotes::install_github("RamiKrispin/coronavirus")
 require(flexdashboard)
 require(coronavirus)
-data(coronavirus)
 update_datasets()
+data(coronavirus)
 covid_es <- readr::read_csv2("./data/covid_es.csv", 
                              locale = readr::locale("es", decimal_mark = ",")
                              )
