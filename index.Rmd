@@ -49,7 +49,8 @@ df_daily <- covid_es %>%
   dplyr::filter(CCAA == "España") %>% 
   dplyr::arrange(date) %>% 
   dplyr::mutate(activos = confirmados - ifelse(is.na(recuperados), 0, recuperados) - ifelse(is.na(fallecidos), 0, fallecidos)) %>% 
-  dplyr::mutate(nuevos_conf = confirmados - dplyr::lag(confirmados))
+  dplyr::mutate(nuevos_conf = confirmados - dplyr::lag(confirmados)) %>% 
+  dplyr::mutate(nuevos_p = (nuevos_conf/dplyr::lag(nuevos_conf))-1)
 
 ```
 
