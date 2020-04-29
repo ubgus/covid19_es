@@ -1,0 +1,672 @@
+---
+title: "COVID-19 en España"
+author: 'Gustavo Useche Bonilla'
+date: "`r format(Sys.Date(), '%d de %B, %Y')`"
+output: 
+    flexdashboard::flex_dashboard:
+      orientation: rows
+      # social: ["facebook", "twitter", "linkedin"]
+      source_code: embed
+      vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+#------------------ Packages ------------------
+# remotes::install_github("RamiKrispin/coronavirus")
+require(flexdashboard)
+require(coronavirus)
+require(data.table)
+data(coronavirus)
+update_datasets()
+
+`%>%` <- magrittr::`%>%`
+#------------------ Parameters ------------------
+# Set colors
+# https://www.w3.org/TR/css-color-3/#svg-color
+confirmed_color <- "#1f77b4"
+active_color <- "orchid"
+recovered_color <- "forestgreen"
+death_color <- "red"
+new_cases_color <- "#66ffcc"
+
+# Set locale
+local_es <- readr::locale("es", decimal_mark = ",")
+
+#------------------ Data ------------------
+
+covid_init <- data.table::fread("https://covid19.isciii.es/resources/serie_historica_acumulados.csv")
+covid_es <- covid_init[FECHA != ""
+                        ][, FECHA := dmy(FECHA, tz = "CET")
+                          ]
+
+old_names <- names(covid_es)
+new_names <- tolower(old_names) %>% stringr::str_remove_all("\\+")
+setnames(covid_es, old_names, new_names)
+
+df <- covid_es  %>%
+  dplyr::filter(date == max(date)) %>%
+  dplyr::filter(CCAA == "España") %>% 
+  dplyr::select(CCAA, date:recuperados) %>% 
+  dplyr::mutate(activos = confirmados - ifelse(is.na(recuperados), 0, recuperados) - ifelse(is.na(fallecidos), 0, fallecidos)) %>%
+  dplyr::arrange(-confirmados) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(CCAA = factor(CCAA, levels = CCAA))
+
+df_daily <- covid_es %>%
+  dplyr::filter(CCAA == "España") %>% 
+  dplyr::arrange(date) %>% 
+  dplyr::mutate(activos = confirmados - ifelse(is.na(recuperados), 0, recuperados) - ifelse(is.na(fallecidos), 0, fallecidos)) %>% 
+  dplyr::mutate(nuevos_conf = confirmados - dplyr::lag(confirmados)) %>% 
+  dplyr::mutate(nuevos_p = (nuevos_conf/dplyr::lag(nuevos_conf))-1)
+
+```
+
+
+Resumen
+=======================================================================
+
+Row {data-width=400}
+-----------------------------------------------------------------------
+
+### Confirmados {.value-box}
+
+```{r}
+
+valueBox(
+  value = paste(format(df$confirmados, big.mark = ".", decimal.mark = ","), "", sep = " "),
+  caption = "Casos confirmados totales",
+  icon = "fas fa-virus",
+  color = confirmed_color
+)
+```
+
+
+
+
+
+
+
+### Activos {.value-box}
+
+```{r}
+
+valueBox(
+  value = paste(format(df$activos, big.mark = ".", decimal.mark = ","), "", sep = " "),
+  caption = "Casos Activos",
+  icon = "fas fa-ambulance",
+  color = active_color
+)
+```
+
+
+
+
+
+
+
+
+### Fallecidos {.value-box}
+
+```{r}
+
+valueBox(
+  value = paste(format(df$fallecidos, big.mark = ".", decimal.mark = ","), " (",
+    prettyNum(round(100 * df$fallecidos / df$confirmados, 1), decimal.mark = ","),
+    "%)",
+    sep = ""
+  ),
+  caption = "Fallecidos totales (Mortalidad)",
+  icon = "fas fa-heart-broken",
+  color = death_color
+)
+```
+
+
+
+
+### Recuperados {.value-box}
+
+```{r}
+
+valueBox(
+  value = paste(format(df$recuperados, big.mark = ".", decimal.mark = ","), "", sep = " "),
+  caption = "Casos Cuperados totales",
+  icon = "fas fa-heartbeat",
+  color = recovered_color
+)
+```
+
+
+
+
+
+
+
+
+
+
+
+Row
+-----------------------------------------------------------------------
+
+### **Casos totales diarios, por tipo**
+    
+```{r}
+plotly::plot_ly(data = df_daily) %>%
+  plotly::add_trace(
+    x = ~date,
+    y = ~confirmados,
+    type = "scatter",
+    mode = "lines+markers",
+    name = "Confirmados",
+    line = list(color = confirmed_color, shape = "spline"),
+    marker = list(color = confirmed_color)
+  ) %>% 
+  plotly::add_trace(
+    x = ~date,
+    y = ~fallecidos,
+    type = "scatter",
+    mode = "lines+markers",
+    name = "Muertes",
+    line = list(color = death_color),
+    marker = list(color = death_color)
+  ) %>%
+    plotly::add_trace(
+    x = ~date,
+    y = ~recuperados,
+    type = "scatter",
+    mode = "lines+markers",
+    name = "Recuperados",
+    line = list(color = recovered_color),
+    marker = list(color = recovered_color)
+  ) %>%
+  plotly::add_annotations(
+    x = as.Date("2020-03-15"),
+    y = 7753,
+    text = "Inicia la<br>cuarentena",
+    xref = "x",
+    yref = "y",
+    arrowhead = 5,
+    arrowhead = 3,
+    arrowsize = 1,
+    showarrow = TRUE,
+    ax = -20,
+    ay = -70
+  ) %>%
+  plotly::add_annotations(
+    x = as.Date("2020-04-17"),
+    y = 72963,
+    text = "Datos actualizados<br>de Cataluña",
+    xref = "x",
+    yref = "y",
+    arrowhead = 5,
+    arrowhead = 3,
+    arrowsize = 1,
+    showarrow = TRUE,
+    ax = 15,
+    ay = -50
+  ) %>%
+#  plotly::add_annotations(
+#    x = as.Date("2020-03-11"),
+#    y = 3,
+#    text = paste("First death"),
+#    xref = "x",
+#    yref = "y",
+#    arrowhead = 5,
+#    arrowhead = 3,
+#    arrowsize = 1,
+#    showarrow = TRUE,
+#    ax = -90,
+#    ay = -90
+#  ) %>%
+#  plotly::add_annotations(
+#    x = as.Date("2020-03-18"),
+#    y = 14,
+#    text = paste(
+#      "New containment",
+#      "",
+#      "measures"
+#    ),
+#    xref = "x",
+#    yref = "y",
+#    arrowhead = 5,
+#    arrowhead = 3,
+#    arrowsize = 1,
+#    showarrow = TRUE,
+#    ax = -10,
+#    ay = -90
+#  ) %>%
+  plotly::layout(
+    title = "",
+    yaxis = list(title = "Casos totales acumulados"),
+    xaxis = list(title = "Fecha"),
+    legend = list(x = 0.1, y = 0.9),
+    hovermode = "compare"
+  )
+```
+
+
+Nuevos casos y activos
+=======================================================================
+
+Column
+-------------------------------------
+
+### **Nuevos casos frente al total de activos**
+
+```{r}
+
+plotly::plot_ly(data = df_daily) %>% 
+  plotly::add_trace(
+    x = ~date,
+    y = ~nuevos_conf,
+    name = "Nuevos casos confirmados",
+    type = "bar",
+    marker = list(color = new_cases_color)
+  ) %>% 
+  plotly::layout(
+    title = "",
+    yaxis = list(title = "Casos"),
+    xaxis = list(title = "Fecha"),
+    hovermode = "compare"
+  )
+```
+
+
+
+
+Comunidades Autonomas y Europa
+=======================================================================
+
+
+Column
+-------------------------------------
+
+
+### **Casos totales en las distintas CCAA**
+    
+```{r ccaa_totales}
+daily_confirmed <- covid_es %>%
+#  dplyr::filter(type == "confirmed") %>%
+#  dplyr::filter(date >= "2020-02-29") %>%
+#  dplyr::mutate(country = Country.Region) %>%
+#  dplyr::group_by(date, country) %>%
+#  dplyr::summarise(total = sum(cases)) %>%
+#  dplyr::ungroup() %>%
+  dplyr::filter(CCAA != "España") %>% 
+  dplyr::select(CCAA, date, confirmados) %>% 
+  dplyr::arrange(date) %>% 
+  tidyr::pivot_wider(names_from = CCAA, values_from = confirmados)
+
+#----------------------------------------
+# Plotting the data
+
+plotly::plot_ly(daily_confirmed) %>%
+  plotly::add_trace(
+    x = ~date,
+    y = ~Andalucía,
+    type = "scatter",
+    mode = "lines+markers",
+    name = "Andalucía"
+  ) %>%
+  plotly::add_trace(
+    x = ~date,
+    y = ~Aragón,
+    type = "scatter",
+    mode = "lines+markers",
+    name = "Aragón"
+  ) %>%
+  plotly::add_trace(
+    x = ~date,
+    y = ~Asturias,
+    type = "scatter",
+    mode = "lines+markers",
+    name = "Asturias"
+  ) %>%
+  plotly::add_trace(
+    x = ~date,
+    y = ~Baleares,
+    type = "scatter",
+    mode = "lines+markers",
+    name = "Baleares"
+  ) %>%
+    plotly::add_trace(
+    x = ~date,
+    y = ~Canarias,
+    type = "scatter",
+    mode = "lines+markers",
+    name = "Canarias"
+  ) %>%
+    plotly::add_trace(
+    x = ~date,
+    y = ~Cantabria,
+    type = "scatter",
+    mode = "lines+markers",
+    name = "Cantabria"
+  ) %>%
+    plotly::add_trace(
+    x = ~date,
+    y = ~`Castilla La Mancha`,
+    type = "scatter",
+    mode = "lines+markers",
+    name = "Castilla-La Mancha"
+  ) %>%
+    plotly::add_trace(
+    x = ~date,
+    y = ~`Castilla y León`,
+    type = "scatter",
+    mode = "lines+markers",
+    name = "Castilla y León"
+  ) %>%
+    plotly::add_trace(
+    x = ~date,
+    y = ~Cataluña,
+    type = "scatter",
+    mode = "lines+markers",
+    name = "Cataluña"
+  ) %>%
+    plotly::add_trace(
+    x = ~date,
+    y = ~Ceuta,
+    type = "scatter",
+    mode = "lines+markers",
+    name = "Ceuta"
+  ) %>%
+    plotly::add_trace(
+    x = ~date,
+    y = ~`C. Valenciana`,
+    type = "scatter",
+    mode = "lines+markers",
+    name = "C. Valenciana"
+  ) %>%
+    plotly::add_trace(
+    x = ~date,
+    y = ~Extremadura,
+    type = "scatter",
+    mode = "lines+markers",
+    name = "Extremadura"
+  ) %>%
+    plotly::add_trace(
+    x = ~date,
+    y = ~Galicia,
+    type = "scatter",
+    mode = "lines+markers",
+    name = "Galicia"
+  ) %>%
+    plotly::add_trace(
+    x = ~date,
+    y = ~Madrid,
+    type = "scatter",
+    mode = "lines+markers",
+    name = "Madrid"
+  ) %>%
+    plotly::add_trace(
+    x = ~date,
+    y = ~Melilla,
+    type = "scatter",
+    mode = "lines+markers",
+    name = "Melilla"
+  ) %>%
+    plotly::add_trace(
+    x = ~date,
+    y = ~Murcia,
+    type = "scatter",
+    mode = "lines+markers",
+    name = "Murcia"
+  ) %>%
+    plotly::add_trace(
+    x = ~date,
+    y = ~Navarra,
+    type = "scatter",
+    mode = "lines+markers",
+    name = "Navarra"
+  ) %>%
+    plotly::add_trace(
+    x = ~date,
+    y = ~`País Vasco`,
+    type = "scatter",
+    mode = "lines+markers",
+    name = "País Vasco"
+  ) %>%
+    plotly::add_trace(
+    x = ~date,
+    y = ~`La Rioja`,
+    type = "scatter",
+    mode = "lines+markers",
+    name = "La Rioja"
+  ) %>%
+    plotly::layout(
+    title = "",
+    legend = list(x = 0.1, y = 1.05),
+    yaxis = list(title = "Casos Totales"),
+    xaxis = list(title = "Fecha"),
+    # paper_bgcolor = "black",
+    # plot_bgcolor = "black",
+    # font = list(color = 'white'),
+    # hovermode = "compare",
+    hovermode = "closest",
+    separators = ",.",
+    margin = list(
+      # l = 60,
+      # r = 40,
+      b = 10,
+      t = 10,
+      pad = 2
+    )
+  )
+```
+ 
+### **Distribución de los casos por tipos**
+
+```{r cases_by_type}
+df_EU <- coronavirus %>%
+  # dplyr::filter(date == max(date)) %>%
+  dplyr::filter(Country.Region == "Spain" |
+    Country.Region == "France" |
+    Country.Region == "Italy" |
+    Country.Region == "Portugal" | 
+    Country.Region == "Germany" ) %>%
+  dplyr::group_by(Country.Region, type) %>%
+  dplyr::summarise(total = sum(cases)) %>%
+  tidyr::pivot_wider(
+    names_from = type,
+    values_from = total
+  ) %>%
+  # dplyr::mutate(unrecovered = confirmed - ifelse(is.na(recovered), 0, recovered) - ifelse(is.na(death), 0, death)) %>%
+  dplyr::mutate(active = confirmed - ifelse(is.na(death), 0, death) - ifelse(is.na(recovered), 0, recovered)) %>%
+  dplyr::arrange(confirmed) %>%
+  dplyr::ungroup() %>% 
+  dplyr::mutate(country = dplyr::if_else(Country.Region == "United Arab Emirates", "UAE", Country.Region)) %>%
+  dplyr::mutate(country = dplyr::if_else(country == "Spain", "España", country)) %>%
+  dplyr::mutate(country = dplyr::if_else(country == "France", "Francia", country)) %>%
+  dplyr::mutate(country = dplyr::if_else(country == "Italy", "Italia", country)) %>%
+  dplyr::mutate(country = dplyr::if_else(country == "Germany", "Alemania", country)) %>%
+  dplyr::mutate(country = trimws(country)) %>%
+  dplyr::mutate(country = factor(country, levels = country))
+
+plotly::plot_ly(
+  data = df_EU,
+  x = ~country,
+  # y = ~unrecovered,
+  y = ~active,
+  # text =  ~ confirmed,
+  # textposition = 'auto',
+  type = "bar",
+  name = "Activos",
+  marker = list(color = active_color)
+) %>%
+  plotly::add_trace(
+    y = ~death,
+    # text =  ~ death,
+    # textposition = 'auto',
+    name = "Fallecidos",
+    marker = list(color = death_color)
+  ) %>%
+  plotly::add_trace(
+    y = ~recovered, 
+    name = "Curados", 
+    marker = list(color = recovered_color)
+  ) %>% 
+  plotly::layout(
+    barmode = "stack",
+    yaxis = list(title = "Casos totales"),
+    xaxis = list(title = ""),
+    hovermode = "compare",
+    margin = list(
+      # l = 60,
+      # r = 40,
+      b = 10,
+      t = 10,
+      pad = 2
+    )
+  )
+```
+
+
+Mapas
+=======================================================================
+
+Column {.tabset .tabset-fade}
+-------------------------------------
+### **España**
+
+```{r}
+library(leaflet)
+library(leafpop)
+library(purrr)
+cv_data_for_plot_spain <- covid_es %>%
+  # dplyr::filter(Country.Region == "Belgium") %>%
+  # dplyr::filter(cases > 0) %>%
+  # dplyr::group_by(Country.Region, Province.State, Lat, Long, type) %>%
+  # dplyr::summarise(cases = sum(cases)) %>%
+  # dplyr::mutate(log_cases = 2 * log(cases)) %>%
+  dplyr::filter(date == max(date)) %>%
+  dplyr::filter(CCAA != "España") %>% 
+  dplyr::group_by(CCAA, Lat, Long) %>% 
+  tidyr::pivot_longer(
+    cols = confirmados:recuperados,
+    names_to = "tipo",
+    values_to = "casos"
+  ) %>% 
+  dplyr::mutate(log_cases = 2 * log(casos)) %>% 
+  dplyr::ungroup()
+
+cv_data_for_plot_spain.split <- cv_data_for_plot_spain %>% split(cv_data_for_plot_spain$tipo)
+pal <- colorFactor(c("orange", "red", "green"), domain = c("confirmados", "fallecidos", "recuperados"))
+map_object <- leaflet() %>% addProviderTiles(providers$Esri.WorldStreetMap)
+names(cv_data_for_plot_spain.split) %>%
+  purrr::walk(function(df) {
+    map_object <<- map_object %>%
+      addCircleMarkers(
+        data = cv_data_for_plot_spain.split[[df]],
+        lng = ~Long, lat = ~Lat,
+        #                 label=~as.character(cases),
+        color = ~ pal(tipo),
+        stroke = FALSE,
+        fillOpacity = 0.8,
+        radius = ~log_cases,
+        popup = leafpop::popupTable(cv_data_for_plot_spain.split[[df]],
+          feature.id = FALSE,
+          row.numbers = FALSE,
+          zcol = c("tipo", "casos", "Provincia", "CCAA")
+        ),
+        group = df,
+        #                 clusterOptions = markerClusterOptions(removeOutsideVisibleBounds = F),
+        labelOptions = labelOptions(
+          noHide = F,
+          direction = "auto"
+        )
+      )
+  })
+
+map_object %>%
+  addLayersControl(
+    overlayGroups = names(cv_data_for_plot_spain.split),
+    options = layersControlOptions(collapsed = FALSE)
+  )
+```
+
+
+
+
+
+### **Mapa mundial de casos** (*usa los iconos +  y - para acercarte o alejarte*)
+
+```{r}
+# map tab added by Art Steinmetz
+cv_data_for_plot <- coronavirus %>%
+  # dplyr::filter(Country.Region == "Belgium") %>%
+  dplyr::filter(cases > 0) %>%
+  dplyr::group_by(Country.Region, Province.State, Lat, Long, type) %>%
+  dplyr::summarise(cases = sum(cases)) %>%
+  dplyr::mutate(log_cases = 2 * log(cases)) %>%
+  dplyr::ungroup()
+cv_data_for_plot.split <- cv_data_for_plot %>% split(cv_data_for_plot$type)
+pal <- colorFactor(c("orange", "red", "green"), domain = c("confirmed", "death", "recovered"))
+map_object <- leaflet() %>% addProviderTiles(providers$Stamen.Toner)
+names(cv_data_for_plot.split) %>%
+  purrr::walk(function(df) {
+    map_object <<- map_object %>%
+      addCircleMarkers(
+        data = cv_data_for_plot.split[[df]],
+        lng = ~Long, lat = ~Lat,
+        #                 label=~as.character(cases),
+        color = ~ pal(type),
+        stroke = FALSE,
+        fillOpacity = 0.8,
+        radius = ~log_cases,
+        popup = leafpop::popupTable(cv_data_for_plot.split[[df]],
+          feature.id = FALSE,
+          row.numbers = FALSE,
+          zcol = c("type", "cases", "Country.Region", "Province.State")
+        ),
+        group = df,
+        #                 clusterOptions = markerClusterOptions(removeOutsideVisibleBounds = F),
+        labelOptions = labelOptions(
+          noHide = F,
+          direction = "auto"
+        )
+      )
+  })
+
+map_object %>%
+  addLayersControl(
+    overlayGroups = names(cv_data_for_plot.split),
+    options = layersControlOptions(collapsed = FALSE)
+  )
+```
+
+
+
+
+
+Acerca de
+=======================================================================
+
+**COVID-19 en España**
+
+COVID-19 en España, provee información a grandes rasgos de la epidemia por el Nuevo Coronavirus 2019 (2019-nCoV) en España, sus comunidades autonomas y relación con otros paises del mundo. Este gráfico es generado con R utilizando como base el paquete RMarkdown y sus derivados, y fue adapatados de los tableros de [Rami Krispin](https://ramikrispin.github.io/coronavirus_dashboard/){target="_blank"} y [Antoine Soetewey](https://www.antoinesoetewey.com/files/coronavirus-dashboard.html){target="_blank"}. <br>
+Este es mi primer proyecto publicado usando R.
+
+**Código**
+
+El código usado para la creación de esta página puede encontrarse en  [GitHub](https://github.com/ubgus/covid19_es){target="_blank"}.
+
+
+**Fuentes**
+
+Los datos son obtenidos del repositorio sobre Coronavirus del Johns Hopkins University Center for Systems Science and Engineering ([JHU CCSE](https://github.com/CSSEGISandData/COVID-19)), y recogidos de las actualizaciones diarias del [Centro de Coordinación de Alertas y Emergencias Sanitarias](https://www.mscbs.gob.es/profesionales/saludPublica/ccayes/alertasActual/nCov-China/situacionActual.htm). <br>
+Los datos y el tablero son actualizados diariamente.
+
+
+**Contacto**
+
+Para cualquier pregunta puedes contactarme en [Twitter](https://twitter.com/nefro_analista). <br>
+Más información sobre este tablero en el [artículo](https://www.statsandr.com/blog/how-to-create-a-simple-coronavirus-dashboard-specific-to-your-country-in-r/) que me sirvió de inspiración.
+
+
+**Actualización**
+
+Últimos datos adquiridos del CCAES el `r format(max(covid_es$date), "%A, %d de %B, %Y")`. <br>
+Últimos datos adquiridos del JHU CCSE el `r format(max(coronavirus$date), "%A, %d de %B, %Y")`. <br>
+Última actualización del tablero el `r format(Sys.Date(), "%A, %d de %B, %Y")`.
